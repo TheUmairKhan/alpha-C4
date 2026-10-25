@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --color-ink: #05060d;
+  --color-panel: #0a0d1c;
+  --color-mist: #e6e8f2;
+  --color-c4-red: #ff2e4d;
+  --color-c4-yellow: #ffd23b;
+  --color-magenta: #ff2bd1;
+  --color-cyan: #00f0ff;
+
+  --animate-glitch-a: glitch-a 4.5s steps(1) infinite;
+  --animate-glitch-b: glitch-b 4.5s steps(1) infinite;
+  --animate-flicker: flicker 7s linear infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-blink: blink 1.2s steps(2) infinite;
+  --animate-chain: chain 2.4s ease-in-out infinite;
+
+  @keyframes glitch-a {
+    0%,
+    100% {
+      transform: translate(-0.25px, 0);
+      opacity: 0.7;
+    }
+    86% {
+      transform: translate(-0.9px, 0.3px);
+      opacity: 1;
+    }
+    88% {
+      transform: translate(0.6px, -0.2px);
+    }
+    90% {
+      transform: translate(-0.4px, 0.1px);
+    }
+    92% {
+      transform: translate(-0.25px, 0);
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes glitch-b {
+    0%,
+    100% {
+      transform: translate(0.25px, 0);
+      opacity: 0.7;
+    }
+    86% {
+      transform: translate(0.8px, -0.3px);
+      opacity: 1;
+    }
+    88% {
+      transform: translate(-0.7px, 0.2px);
+    }
+    90% {
+      transform: translate(0.5px, 0);
+    }
+    92% {
+      transform: translate(0.25px, 0);
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes flicker {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    41% {
+      opacity: 1;
+    }
+    42% {
+      opacity: 0.55;
+    }
+    43% {
+      opacity: 1;
+    }
+    44% {
+      opacity: 0.7;
+    }
+    45% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0.2;
+    }
+  }
+
+  @keyframes chain {
+    0%,
+    45%,
+    100% {
+      filter: brightness(0.45);
+      transform: translateY(0);
+    }
+    15% {
+      filter: brightness(1.2);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+.crt {
+  background:
+    repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.7));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+}
