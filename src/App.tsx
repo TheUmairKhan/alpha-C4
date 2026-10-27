@@ -1,17 +1,29 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import PlayCard from './components/playcard'
+import PlayCard from './components/PlayCard'
 import './App.css'
+import StatsCard from './components/StatCard'
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
-    <PlayCard>
-      
-    </PlayCard>
+    <main className='crt flex min-h-screen items-center justify-center bg-ink font-display text-mist'>
+      <PlayCard />
+      <StatsCard 
+        title="MODEL STATS"
+        accent="red"
+        stats={[
+          { label: 'TOTAL WINS', value: '—' },
+          { label: 'TOTAL LOSSES', value: '—' },
+        ]}
+      />
+      <StatsCard 
+        title="PLAYER STATS"
+        accent="yellow"
+        stats={[
+          { label: "WINS", value: "—"},
+          { label: "LOSSES", value: "—" }
+        ]}
+      />
+    </main>
   )
 }
 
