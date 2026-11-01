@@ -17,7 +17,7 @@ export enum GameResult {
 }
 
 // board: flattened 7x6 board (-1: empty, 0, 1), heights: track pieces in each column [7], turn: which player's turn
-export type Board = { cells: number[]; heights: number[]; turn: number}
+export type BoardState = { cells: number[]; heights: number[]; turn: number; status: GameResult}
 
 export const cellIndex = (col: number, row: number) => col * ROWS + row;
 
@@ -40,21 +40,38 @@ export function findLine(cells: number[], col: number, row: number) {
 }
 
 
-export function playMove(board: Board, col: number) {
-    const { cells, heights, turn } = board
+export function newGame(): BoardState {
+    return {
+        cells: Array(COLS * ROWS).fill(-1),
+        heights: Array(COLS).fill(0),
+        turn: 0,
+        status: GameResult.Ongoing
+    }
+}
 
-    if (heights[col] >= ROWS) return { status: GameResult.Invalid, board }
+export function playMove(board: BoardState, col: number): BoardState {
+    const { cells, heights, turn, status } = board
+
+    if (heights[col] >= ROWS) {
+        board.status = GameResult.Invalid
+        return board
+    }
 
     const row = heights[col]
     cells[cellIndex(col, row)] = turn
     heights[col]++
 
-    const winningLine = findLine(cells, col, row)
-
-    if (winningLine) return { status: GameResult.Win, board, winningLine }
-    if (heights.every(height => height === ROWS)) return { status: GameResult.Draw, board }
+    if (findLine(cells, col, row)) {
+        board.status = GameResult.Win
+        return board
+    }
+    if (heights.every(height => height === ROWS)) {
+        board.status = GameResult.Draw
+        return board
+    }
 
     board.turn = 1 - turn
+    board.status = GameResult.Ongoing
 
-    return { status: GameResult.Ongoing, board }
+    return board
 }
