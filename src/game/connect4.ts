@@ -1,5 +1,7 @@
 const COLUMNS = 7
 const ROWS = 6
+export const COLS = COLUMNS
+export { ROWS }
 const DIRECTIONS = [
     [1, 0],
     [0, 1],
