@@ -198,7 +198,6 @@ export default function Board() {
   const animRef = useRef<Anim>(newAnim())
   const hoverRef = useRef<number | null>(null)
   const movesRef = useRef<number[]>([])
-  const gameIdRef = useRef(0)
   const thinkingRef = useRef(false)
   const get = useThree((state) => state.get)
 
@@ -215,11 +214,9 @@ export default function Board() {
   }
 
   const requestModelMove = () => {
-    const gameId = gameIdRef.current
     thinkingRef.current = true
     chooseMove(movesRef.current.slice())
       .then((col) => {
-        if (gameId !== gameIdRef.current) return
         thinkingRef.current = false
         play(col)
       })
@@ -250,7 +247,6 @@ export default function Board() {
       boardRef.current = newGame()
       animRef.current = newAnim()
       movesRef.current = []
-      gameIdRef.current++
       thinkingRef.current = false
     }
     const board = boardRef.current

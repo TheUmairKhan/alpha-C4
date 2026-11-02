@@ -20,7 +20,7 @@ function loadEngine() {
 
 self.onmessage = async ({ data }: MessageEvent<AiRequest>) => {
   const column = (await loadEngine()).best_move(new Uint8Array(data.moves), data.simulations)
-  const reply: AiResponse = { id: data.id, column }
+  const reply: AiResponse = { column }
   self.postMessage(reply)
 }
 
