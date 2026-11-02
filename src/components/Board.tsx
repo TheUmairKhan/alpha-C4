@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { COLS, ROWS, GameResult, cellIndex, findLine, newGame, playMove, type BoardState } from '../game/connect4'
+import { chooseMove, warmUpAI } from '../ai/client'
 import { BACKGROUND, FRAME, PLAYER_COLORS, PX, REDUCED_MOTION, canvasTexture, discTexture, dummy, tint } from './sceneKit'
 
 const CELL = 0.62
@@ -196,13 +197,33 @@ export default function Board() {
   const boardRef = useRef<BoardState>(newGame())
   const animRef = useRef<Anim>(newAnim())
   const hoverRef = useRef<number | null>(null)
+  const movesRef = useRef<number[]>([])
+  const gameIdRef = useRef(0)
+  const thinkingRef = useRef(false)
   const get = useThree((state) => state.get)
 
   useLayoutEffect(() => {
     const discs = discsRef.current!
     for (let i = 0; i < COLS * ROWS; i++) discs.setColorAt(i, tint.set(0xffffff))
     discs.count = 0
+    warmUpAI()
   }, [])
+
+  const play = (col: number) => {
+    dropDisc(boardRef.current, animRef.current, col)
+    movesRef.current.push(col)
+  }
+
+  const requestModelMove = () => {
+    const gameId = gameIdRef.current
+    thinkingRef.current = true
+    chooseMove(movesRef.current.slice())
+      .then((col) => {
+        if (gameId !== gameIdRef.current) return
+        thinkingRef.current = false
+        play(col)
+      })
+  }
 
   const columnAt = (point: THREE.Vector3) =>
     THREE.MathUtils.clamp(Math.floor(point.x / CELL + COLS / 2), 0, COLS - 1)
@@ -219,7 +240,8 @@ export default function Board() {
 
   const place = ({ point }: { point: THREE.Vector3 }) => {
     const col = columnAt(point)
-    if (canPlace(boardRef.current, animRef.current, col)) dropDisc(boardRef.current, animRef.current, col)
+    const humanTurn = boardRef.current.turn === 0 && !thinkingRef.current
+    if (humanTurn && canPlace(boardRef.current, animRef.current, col)) play(col)
   }
 
   useFrame(({ clock }, delta) => {
@@ -227,13 +249,27 @@ export default function Board() {
     if (stepAnim(animRef.current, dt)) {
       boardRef.current = newGame()
       animRef.current = newAnim()
+      movesRef.current = []
+      gameIdRef.current++
+      thinkingRef.current = false
     }
     const board = boardRef.current
     const anim = animRef.current
 
+    // Model's turn: once the human's disc has landed, ask it for a move
+    if (
+      board.turn === 1 &&
+      board.status === GameResult.Ongoing &&
+      !thinkingRef.current &&
+      anim.phase === 'play' &&
+      anim.discs.every((d) => d.settled)
+    ) {
+      requestModelMove()
+    }
+
     const highlight = highlightRef.current!
     const col = hoverRef.current
-    highlight.visible = col !== null && anim.phase === 'play' && board.heights[col] < ROWS
+    highlight.visible = col !== null && board.turn === 0 && !thinkingRef.current && anim.phase === 'play' && board.heights[col] < ROWS
     if (col !== null) highlight.position.x = colX(col)
     fillMaterialRef.current!.color.copy(PLAYER_COLORS[board.turn]).multiplyScalar(0.45)
     chevronMaterialRef.current!.color.copy(PLAYER_COLORS[board.turn])
