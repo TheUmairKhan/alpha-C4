@@ -188,7 +188,7 @@ function stepAnim(anim: Anim, dt: number): boolean {
   return false
 }
 
-export default function Board() {
+export default function Board({ onMove, onReset }: { onMove: (col: number) => void; onReset: () => void }) {
   const discsRef = useRef<THREE.InstancedMesh>(null)
   const highlightRef = useRef<THREE.Group>(null)
   const fillMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
@@ -211,6 +211,7 @@ export default function Board() {
   const play = (col: number) => {
     dropDisc(boardRef.current, animRef.current, col)
     movesRef.current.push(col)
+    onMove(col)
   }
 
   const requestModelMove = () => {
@@ -247,6 +248,7 @@ export default function Board() {
       boardRef.current = newGame()
       animRef.current = newAnim()
       movesRef.current = []
+      onReset()
       thinkingRef.current = false
     }
     const board = boardRef.current
