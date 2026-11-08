@@ -8,6 +8,9 @@ export const BASE_FOV = 55
 export const WIDE_LAYOUT = 1024
 export const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// World-space width of one board cell
+export const CELL = 0.62
+
 export const PX = 128
 
 export function canvasTexture(width: number, height: number, draw: (ctx: CanvasRenderingContext2D) => void) {

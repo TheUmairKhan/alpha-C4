@@ -2,10 +2,10 @@ import { useLayoutEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { COLS, ROWS, GameResult, cellIndex, findLine, newGame, playMove, type BoardState } from '../game/connect4'
-import { chooseMove, warmUpAI } from '../ai/client'
-import { BACKGROUND, FRAME, PLAYER_COLORS, PX, REDUCED_MOTION, canvasTexture, discTexture, dummy, tint } from './sceneKit'
+import type { HintState } from '../types'
+import { chooseHint, chooseMove, warmUpAI, warmUpHints } from '../ai/client'
+import { BACKGROUND, CELL, FRAME, PLAYER_COLORS, PX, REDUCED_MOTION, canvasTexture, discTexture, dummy, tint } from './sceneKit'
 
-const CELL = 0.62
 const DISC_RADIUS = 0.27
 const HOLE_RADIUS = 0.235
 const PADDING_X = 0.3
@@ -193,7 +193,12 @@ type BoardProps = {
   playerSide: number | null
   // Number of moves to show while reviewing history; null follows the live game
   viewIndex: number | null
-  onMove: (col: number) => void
+  // Show the model's suggestion for the human's next move
+  hints: boolean
+  // Reports what the hint labels should show
+  onHint: (hint: HintState) => void
+  // confidence is the model's visit share for its own moves, null for the human's
+  onMove: (col: number, confidence: number | null) => void
   onReset: () => void
 }
 
@@ -206,7 +211,7 @@ function replayDiscs(moves: number[], count: number): Disc[] {
   })
 }
 
-export default function Board({ playerSide, viewIndex, onMove, onReset }: BoardProps) {
+export default function Board({ playerSide, viewIndex, hints, onHint, onMove, onReset }: BoardProps) {
   const discsRef = useRef<THREE.InstancedMesh>(null)
   const highlightRef = useRef<THREE.Group>(null)
   const fillMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
@@ -218,6 +223,8 @@ export default function Board({ playerSide, viewIndex, onMove, onReset }: BoardP
   const movesRef = useRef<number[]>([])
   const thinkingRef = useRef(false)
   const aliveRef = useRef(true)
+  const hintRef = useRef<{ forLength: number; probs: number[] | null }>({ forLength: -1, probs: null })
+  const reportedHintRef = useRef<HintState>(null)
   const viewCacheRef = useRef<{ moves: number[]; count: number; discs: Disc[] } | null>(null)
   const get = useThree((state) => state.get)
 
@@ -232,20 +239,33 @@ export default function Board({ playerSide, viewIndex, onMove, onReset }: BoardP
     }
   }, [])
 
-  const play = (col: number) => {
+  useLayoutEffect(() => {
+    if (hints) warmUpHints()
+  }, [hints])
+
+  const play = (col: number, confidence: number | null = null) => {
     dropDisc(boardRef.current, animRef.current, col)
     movesRef.current.push(col)
-    onMove(col)
+    onMove(col, confidence)
+  }
+
+  // Runs beside the game: the human can move before it finishes, which makes the result stale and ignored
+  const requestHint = () => {
+    const forLength = movesRef.current.length
+    hintRef.current = { forLength, probs: null }
+    chooseHint(movesRef.current.slice()).then(({ probs }) => {
+      if (aliveRef.current && hintRef.current.forLength === forLength) hintRef.current.probs = probs
+    })
   }
 
   const requestModelMove = () => {
     thinkingRef.current = true
     chooseMove(movesRef.current.slice())
-      .then((col) => {
+      .then(({ column: col, probs }) => {
         // The game may have been reset while the model was thinking
         if (!aliveRef.current) return
         thinkingRef.current = false
-        play(col)
+        play(col, probs[col])
       })
   }
 
@@ -291,6 +311,23 @@ export default function Board({ playerSide, viewIndex, onMove, onReset }: BoardP
       anim.discs.every((d) => d.settled)
     ) {
       requestModelMove()
+    }
+
+    const humanTurn =
+      playerSide !== null &&
+      viewIndex === null &&
+      board.turn === playerSide &&
+      board.status === GameResult.Ongoing &&
+      anim.phase === 'play' &&
+      anim.discs.every((d) => d.settled)
+    if (hints && humanTurn && hintRef.current.forLength !== movesRef.current.length) requestHint()
+
+    const hint = hintRef.current
+    const shownHint: HintState =
+      hints && humanTurn ? (hint.forLength === movesRef.current.length && hint.probs ? hint.probs : 'loading') : null
+    if (shownHint !== reportedHintRef.current) {
+      reportedHintRef.current = shownHint
+      onHint(shownHint)
     }
 
     const highlight = highlightRef.current!

@@ -19,8 +19,9 @@ function loadEngine() {
 }
 
 self.onmessage = async ({ data }: MessageEvent<AiRequest>) => {
-  const column = (await loadEngine()).best_move(new Uint8Array(data.moves), data.simulations)
-  const reply: AiResponse = { column }
+  const choice = (await loadEngine()).choose_move(new Uint8Array(data.moves), data.simulations)
+  const reply: AiResponse = { column: choice.column, probs: Array.from(choice.probs) }
+  choice.free()
   self.postMessage(reply)
 }
 
