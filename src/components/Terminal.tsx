@@ -15,6 +15,9 @@ type TerminalProps = {
     onReset: () => void
 }
 
+// First player is red, second is yellow, matching the discs
+const PLAYER_TEXT = ['text-c4-red', 'text-c4-yellow']
+
 const SIDES = [
     { side: 0, label: 'GO FIRST', chip: 'red' },
     { side: 1, label: 'GO SECOND', chip: 'yellow' },
@@ -45,9 +48,9 @@ export default function Terminal({ height, moves, playerSide, viewIndex, onPick,
     const who = (i: number) => (playerSide === null ? `P${(i % 2) + 1}` : i % 2 === playerSide ? 'Player' : 'Model')
 
     return (
-        <div className="mr-4 flex w-80 shrink-0 flex-col" style={{ height }}>
+        <div className="mr-4 flex w-80 shrink-0 flex-col border-2 border-cyan bg-black" style={{ height }}>
             <aside
-                className="min-h-0 w-full flex-1 overflow-y-auto rounded-t-lg bg-black p-4 font-mono text-sm text-green-400"
+                className="min-h-0 w-full flex-1 overflow-y-auto bg-black p-4 font-mono text-sm text-green-400"
             >
                 {playerSide === null && (
                     <div className="flex flex-col gap-3">
@@ -66,13 +69,13 @@ export default function Terminal({ height, moves, playerSide, viewIndex, onPick,
                     </div>
                 )}
                 {moves.map((col, i) => (
-                    <p key={i} className={i >= shown ? 'opacity-30' : viewIndex !== null && i === shown - 1 ? 'bg-green-400/20' : ''}>
-                        Turn {i + 1}: {who(i)} played column {col + 1}
+                    <p key={i} className={`text-white ${i >= shown ? 'opacity-30' : viewIndex !== null && i === shown - 1 ? 'bg-white/15' : ''}`}>
+                        {i + 1}. <span className={`font-bold ${PLAYER_TEXT[i % 2]}`}>{who(i)}</span> played column {col + 1}
                     </p>
                 ))}
                 <div ref={endRef} />
             </aside>
-            <div className="flex shrink-0 gap-px rounded-b-lg bg-black p-2 pt-0">
+            <div className="flex shrink-0 gap-px bg-black p-2 pt-0">
                 <ControlButton label="Rewind one move" onClick={onRewind} disabled={shown === 0}>
                     ◂◂
                 </ControlButton>
