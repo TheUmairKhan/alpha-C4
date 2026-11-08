@@ -188,7 +188,25 @@ function stepAnim(anim: Anim, dt: number): boolean {
   return false
 }
 
-export default function Board({ onMove, onReset }: { onMove: (col: number) => void; onReset: () => void }) {
+type BoardProps = {
+  // Which player the human controls (0 = first, 1 = second); null until they choose, which leaves the board inert
+  playerSide: number | null
+  // Number of moves to show while reviewing history; null follows the live game
+  viewIndex: number | null
+  onMove: (col: number) => void
+  onReset: () => void
+}
+
+// Static discs for the position after the first `count` moves
+function replayDiscs(moves: number[], count: number): Disc[] {
+  const heights = Array<number>(COLS).fill(0)
+  return moves.slice(0, count).map((col, i) => {
+    const row = heights[col]++
+    return { col, row, player: i % 2, y: rowY(row), vy: 0, settled: true }
+  })
+}
+
+export default function Board({ playerSide, viewIndex, onMove, onReset }: BoardProps) {
   const discsRef = useRef<THREE.InstancedMesh>(null)
   const highlightRef = useRef<THREE.Group>(null)
   const fillMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
@@ -199,6 +217,8 @@ export default function Board({ onMove, onReset }: { onMove: (col: number) => vo
   const hoverRef = useRef<number | null>(null)
   const movesRef = useRef<number[]>([])
   const thinkingRef = useRef(false)
+  const aliveRef = useRef(true)
+  const viewCacheRef = useRef<{ moves: number[]; count: number; discs: Disc[] } | null>(null)
   const get = useThree((state) => state.get)
 
   useLayoutEffect(() => {
@@ -206,6 +226,10 @@ export default function Board({ onMove, onReset }: { onMove: (col: number) => vo
     for (let i = 0; i < COLS * ROWS; i++) discs.setColorAt(i, tint.set(0xffffff))
     discs.count = 0
     warmUpAI()
+    aliveRef.current = true
+    return () => {
+      aliveRef.current = false
+    }
   }, [])
 
   const play = (col: number) => {
@@ -218,6 +242,8 @@ export default function Board({ onMove, onReset }: { onMove: (col: number) => vo
     thinkingRef.current = true
     chooseMove(movesRef.current.slice())
       .then((col) => {
+        // The game may have been reset while the model was thinking
+        if (!aliveRef.current) return
         thinkingRef.current = false
         play(col)
       })
@@ -238,13 +264,14 @@ export default function Board({ onMove, onReset }: { onMove: (col: number) => vo
 
   const place = ({ point }: { point: THREE.Vector3 }) => {
     const col = columnAt(point)
-    const humanTurn = boardRef.current.turn === 0 && !thinkingRef.current
+    const humanTurn = playerSide !== null && viewIndex === null && boardRef.current.turn === playerSide && !thinkingRef.current
     if (humanTurn && canPlace(boardRef.current, animRef.current, col)) play(col)
   }
 
   useFrame(({ clock }, delta) => {
     const dt = Math.min(delta, 0.05)
-    if (stepAnim(animRef.current, dt)) {
+    // The game is frozen while reviewing history, so it can't auto-clear underneath the viewer
+    if (viewIndex === null && stepAnim(animRef.current, dt)) {
       boardRef.current = newGame()
       animRef.current = newAnim()
       movesRef.current = []
@@ -256,7 +283,8 @@ export default function Board({ onMove, onReset }: { onMove: (col: number) => vo
 
     // Model's turn: once the human's disc has landed, ask it for a move
     if (
-      board.turn === 1 &&
+      playerSide !== null &&
+      board.turn === 1 - playerSide &&
       board.status === GameResult.Ongoing &&
       !thinkingRef.current &&
       anim.phase === 'play' &&
@@ -267,19 +295,30 @@ export default function Board({ onMove, onReset }: { onMove: (col: number) => vo
 
     const highlight = highlightRef.current!
     const col = hoverRef.current
-    highlight.visible = col !== null && board.turn === 0 && !thinkingRef.current && anim.phase === 'play' && board.heights[col] < ROWS
+    const viewing = viewIndex !== null
+    const turn = viewing ? viewIndex % 2 : board.turn
+    highlight.visible = !viewing && col !== null && playerSide !== null && board.turn === playerSide && !thinkingRef.current && anim.phase === 'play' && board.heights[col] < ROWS
     if (col !== null) highlight.position.x = colX(col)
-    fillMaterialRef.current!.color.copy(PLAYER_COLORS[board.turn]).multiplyScalar(0.45)
-    chevronMaterialRef.current!.color.copy(PLAYER_COLORS[board.turn])
-    outlineMaterialRef.current!.color.copy(PLAYER_COLORS[board.turn])
+    fillMaterialRef.current!.color.copy(PLAYER_COLORS[turn]).multiplyScalar(0.45)
+    chevronMaterialRef.current!.color.copy(PLAYER_COLORS[turn])
+    outlineMaterialRef.current!.color.copy(PLAYER_COLORS[turn])
     chevronTexture.offset.y += CHEVRON_SPEED * dt
 
     const discs = discsRef.current!
     const pulse = 1 + 0.08 * Math.sin(clock.elapsedTime * 10)
-    const highlighting = anim.phase === 'won' && anim.winners.size > 0
+    const highlighting = !viewing && anim.phase === 'won' && anim.winners.size > 0
     const bottom = -BOARD_HEIGHT / 2
 
-    anim.discs.forEach((disc, i) => {
+    let shown = anim.discs
+    if (viewing) {
+      const cache = viewCacheRef.current
+      if (!cache || cache.moves !== movesRef.current || cache.count !== viewIndex) {
+        viewCacheRef.current = { moves: movesRef.current, count: viewIndex, discs: replayDiscs(movesRef.current, viewIndex) }
+      }
+      shown = viewCacheRef.current!.discs
+    }
+
+    shown.forEach((disc, i) => {
       const winning = highlighting && anim.winners.has(cellIndex(disc.col, disc.row))
       const dimmed = highlighting && !winning
       const fade = THREE.MathUtils.clamp(disc.y - bottom + 0.6, 0, 1)
@@ -291,7 +330,7 @@ export default function Board({ onMove, onReset }: { onMove: (col: number) => vo
       discs.setColorAt(i, tint.copy(PLAYER_COLORS[disc.player]).multiplyScalar(dimmed ? 0.3 : 1))
     })
 
-    discs.count = anim.discs.length
+    discs.count = shown.length
     discs.instanceMatrix.needsUpdate = true
     discs.instanceColor!.needsUpdate = true
   })

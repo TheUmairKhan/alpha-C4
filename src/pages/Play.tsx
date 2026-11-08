@@ -29,6 +29,22 @@ export default function Play() {
   const stageRef = useRef<HTMLDivElement>(null)
   const [boardHeight, setBoardHeight] = useState(0)
   const [moves, setMoves] = useState<number[]>([])
+  const [side, setSide] = useState<number | null>(null)
+  // Moves shown while reviewing history; null follows the live game
+  const [viewIndex, setViewIndex] = useState<number | null>(null)
+  const [gameId, setGameId] = useState(0)
+
+  const rewind = () => setViewIndex((v) => Math.max(0, (v ?? moves.length) - 1))
+  const forward = () => setViewIndex((v) => (v === null || v + 1 >= moves.length ? null : v + 1))
+  const clearGame = () => {
+    setMoves([])
+    setViewIndex(null)
+  }
+  const reset = () => {
+    clearGame()
+    setSide(null)
+    setGameId((id) => id + 1)
+  }
 
   // Terminal height tracks the rendered board height
   useLayoutEffect(() => {
@@ -45,10 +61,10 @@ export default function Play() {
       <div ref={stageRef} className="h-full min-w-0 flex-1">
         <Canvas orthographic dpr={[1, 2]}>
           <FitCamera />
-          <Board onMove={(col) => setMoves((m) => [...m, col])} onReset={() => setMoves([])} />
+          <Board key={gameId} playerSide={side} viewIndex={viewIndex} onMove={(col) => setMoves((m) => [...m, col])} onReset={reset} />
         </Canvas>
       </div>
-      <Terminal height={boardHeight} moves={moves} />
+      <Terminal height={boardHeight} moves={moves} playerSide={side} viewIndex={viewIndex} onPick={setSide} onRewind={rewind} onForward={forward} onReset={reset} />
     </main>
   )
 }
