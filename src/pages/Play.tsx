@@ -57,7 +57,7 @@ export default function Play() {
   }, [])
 
   return (
-    <main className="flex h-screen w-screen items-center overflow-hidden bg-slate-700">
+    <main className="flex h-screen w-screen items-center overflow-hidden cyber-bg">
       <div ref={stageRef} className="h-full min-w-0 flex-1">
         <Canvas orthographic dpr={[1, 2]}>
           <FitCamera />
