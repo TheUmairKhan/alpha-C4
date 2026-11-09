@@ -6,6 +6,7 @@ import HintLabels from '../components/HintLabels'
 import HintToggle from '../components/HintToggle'
 import PeterButton from '../components/PeterButton'
 import Terminal from '../components/Terminal'
+import ThinkingVideo from '../components/ThinkingVideo'
 import { fitZoom } from '../layout'
 import type { HintState, LoggedMove } from '../types'
 
@@ -35,6 +36,8 @@ export default function Play() {
   // Moves shown while reviewing history; null follows the live game
   const [viewIndex, setViewIndex] = useState<number | null>(null)
   const [gameId, setGameId] = useState(0)
+  const [thinking, setThinking] = useState(false)
+  const [peter, setPeter] = useState(false)
 
   const rewind = () => setViewIndex((v) => Math.max(0, (v ?? log.length) - 1))
   const forward = () => setViewIndex((v) => (v === null || v + 1 >= log.length ? null : v + 1))
@@ -42,6 +45,7 @@ export default function Play() {
     setLog([])
     setHint(null)
     setViewIndex(null)
+    setThinking(false)
   }
   const reset = () => {
     clearGame()
@@ -67,15 +71,16 @@ export default function Play() {
       <div ref={stageRef} className="relative h-full min-w-0 flex-1">
         <Canvas orthographic dpr={[1, 2]}>
           <FitCamera />
-          <Board key={gameId} playerSide={side} viewIndex={viewIndex} hints={hints} onHint={setHint} onMove={(col, confidence) => setLog((l) => [...l, { col, confidence }])} onReset={reset} />
+          <Board key={gameId} playerSide={side} viewIndex={viewIndex} hints={hints} onHint={setHint} onThinking={setThinking} onMove={(col, confidence) => setLog((l) => [...l, { col, confidence }])} onReset={reset} />
         </Canvas>
         <HintLabels hint={hint} width={stageSize.width} height={stageSize.height} />
       </div>
       <div className="fixed bottom-4 left-4 flex flex-col items-start gap-2">
-        <PeterButton />
+        <PeterButton on={peter} onToggle={() => setPeter((on) => !on)} />
         <HintToggle on={hints} onToggle={() => setHints((on) => !on)} />
       </div>
       <Terminal height={boardHeight} log={log} playerSide={side} viewIndex={viewIndex} onPick={setSide} onRewind={rewind} onForward={forward} onReset={reset} />
+      <ThinkingVideo active={thinking && peter} />
     </main>
   )
 }

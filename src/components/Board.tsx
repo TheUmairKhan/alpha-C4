@@ -199,6 +199,8 @@ type BoardProps = {
   onHint: (hint: HintState) => void
   // confidence is the model's visit share for its own moves, null for the human's
   onMove: (col: number, confidence: number | null) => void
+  // True while the model is working out its move
+  onThinking: (thinking: boolean) => void
   onReset: () => void
 }
 
@@ -211,7 +213,7 @@ function replayDiscs(moves: number[], count: number): Disc[] {
   })
 }
 
-export default function Board({ playerSide, viewIndex, hints, onHint, onMove, onReset }: BoardProps) {
+export default function Board({ playerSide, viewIndex, hints, onHint, onMove, onThinking, onReset }: BoardProps) {
   const discsRef = useRef<THREE.InstancedMesh>(null)
   const highlightRef = useRef<THREE.Group>(null)
   const fillMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
@@ -236,7 +238,10 @@ export default function Board({ playerSide, viewIndex, hints, onHint, onMove, on
     aliveRef.current = true
     return () => {
       aliveRef.current = false
+      // A move still being computed is ignored once this board is gone, so nothing else would clear it
+      onThinking(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useLayoutEffect(() => {
@@ -260,11 +265,13 @@ export default function Board({ playerSide, viewIndex, hints, onHint, onMove, on
 
   const requestModelMove = () => {
     thinkingRef.current = true
+    onThinking(true)
     chooseMove(movesRef.current.slice())
       .then(({ column: col, probs }) => {
         // The game may have been reset while the model was thinking
         if (!aliveRef.current) return
         thinkingRef.current = false
+        onThinking(false)
         play(col, probs[col])
       })
   }
@@ -295,8 +302,9 @@ export default function Board({ playerSide, viewIndex, hints, onHint, onMove, on
       boardRef.current = newGame()
       animRef.current = newAnim()
       movesRef.current = []
-      onReset()
       thinkingRef.current = false
+      onReset()
+      return
     }
     const board = boardRef.current
     const anim = animRef.current
