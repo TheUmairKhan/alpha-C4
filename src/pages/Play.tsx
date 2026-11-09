@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import Board, { BOARD_HEIGHT } from '../components/Board'
 import HintLabels from '../components/HintLabels'
 import HintToggle from '../components/HintToggle'
+import PeterButton from '../components/PeterButton'
 import Terminal from '../components/Terminal'
 import { fitZoom } from '../layout'
 import type { HintState, LoggedMove } from '../types'
@@ -70,7 +71,10 @@ export default function Play() {
         </Canvas>
         <HintLabels hint={hint} width={stageSize.width} height={stageSize.height} />
       </div>
-      <HintToggle on={hints} onToggle={() => setHints((on) => !on)} />
+      <div className="fixed bottom-4 left-4 flex flex-col items-start gap-2">
+        <PeterButton />
+        <HintToggle on={hints} onToggle={() => setHints((on) => !on)} />
+      </div>
       <Terminal height={boardHeight} log={log} playerSide={side} viewIndex={viewIndex} onPick={setSide} onRewind={rewind} onForward={forward} onReset={reset} />
     </main>
   )
