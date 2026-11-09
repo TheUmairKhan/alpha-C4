@@ -20,11 +20,16 @@ const SCANLINE_GAP = 0.025
 export const BOARD_WIDTH = COLS * CELL + PADDING_X * 2
 export const BOARD_HEIGHT = ROWS * CELL + PADDING_Y * 2
 
+const GLOW_MARGIN = 24
+const GLOW_WORLD = (GLOW_MARGIN / PX) * CELL
+
 const boardTexture = canvasTexture(
-  Math.round((BOARD_WIDTH / CELL) * PX),
-  Math.round((BOARD_HEIGHT / CELL) * PX),
+  Math.round((BOARD_WIDTH / CELL) * PX) + GLOW_MARGIN * 2,
+  Math.round((BOARD_HEIGHT / CELL) * PX) + GLOW_MARGIN * 2,
   (ctx) => {
-    const { width, height } = ctx.canvas
+    const width = ctx.canvas.width - GLOW_MARGIN * 2
+    const height = ctx.canvas.height - GLOW_MARGIN * 2
+    ctx.translate(GLOW_MARGIN, GLOW_MARGIN)
     const padX = (PADDING_X / CELL) * PX
     const padY = (PADDING_Y / CELL) * PX
     const holeRadius = (HOLE_RADIUS / CELL) * PX
@@ -391,7 +396,7 @@ export default function Board({ playerSide, viewIndex, hints, onHint, onMove, on
         <meshBasicMaterial map={discTexture} alphaTest={0.5} toneMapped={false} />
       </instancedMesh>
       <mesh renderOrder={6} onPointerMove={hover} onPointerLeave={leave} onClick={place}>
-        <planeGeometry args={[BOARD_WIDTH, BOARD_HEIGHT]} />
+        <planeGeometry args={[BOARD_WIDTH + GLOW_WORLD * 2, BOARD_HEIGHT + GLOW_WORLD * 2]} />
         <meshBasicMaterial map={boardTexture} transparent depthWrite={false} toneMapped={false} />
       </mesh>
       <group ref={highlightRef} visible={false}>
