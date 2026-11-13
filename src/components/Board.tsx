@@ -223,6 +223,7 @@ export default function Board({ playerSide, viewIndex, hints, onHint, onMove, on
     for (let i = 0; i < COLS * ROWS; i++) discs.setColorAt(i, tint.set(0xffffff))
     discs.count = 0
     warmUpAI()
+    warmUpHints()
     aliveRef.current = true
     return () => {
       aliveRef.current = false
@@ -231,10 +232,6 @@ export default function Board({ playerSide, viewIndex, hints, onHint, onMove, on
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useLayoutEffect(() => {
-    if (hints) warmUpHints()
-  }, [hints])
 
   const play = (col: number, confidence: number | null = null) => {
     dropDisc(boardRef.current, animRef.current, col)
