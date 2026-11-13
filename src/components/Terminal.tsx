@@ -54,8 +54,10 @@ export default function Terminal({ height, log, playerSide, viewIndex, onPick, o
     return (
         <div className="mr-4 flex w-80 shrink-0 flex-col border-2 border-cyan bg-black" style={{ height }}>
             <aside
-                className="min-h-0 w-full flex-1 overflow-y-auto bg-black p-4 font-mono text-sm text-green-400"
+                dir="rtl"
+                className="neon-scroll min-h-0 w-full flex-1 overflow-y-auto bg-black p-4 pl-0.5 font-mono text-[13px] text-green-400"
             >
+                <div dir="ltr">
                 {playerSide === null && (
                     <div className="flex flex-col gap-3">
                         <p>&gt; SELECT PLAYER ORDER<span className="animate-blink">_</span></p>
@@ -72,6 +74,7 @@ export default function Terminal({ height, log, playerSide, viewIndex, onPick, o
                 ))}
                 {outcome !== null && <p className="mt-3 font-bold">&gt; {MESSAGES[outcome]}</p>}
                 <div ref={endRef} />
+                </div>
             </aside>
             <div className="flex shrink-0 gap-px bg-black p-2 pt-0">
                 <RewindButton onClick={onRewind} disabled={shown === 0} />

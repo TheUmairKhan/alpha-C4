@@ -161,3 +161,29 @@
     animation: none !important;
   }
 }
+
+.neon-scroll {
+  scrollbar-gutter: stable;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .neon-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-cyan) #000;
+  }
+}
+
+.neon-scroll::-webkit-scrollbar {
+  width: 14px;
+}
+
+.neon-scroll::-webkit-scrollbar-track {
+  background: #000;
+}
+
+.neon-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-cyan);
+  background-clip: padding-box;
+  border: 4px solid transparent;
+  border-radius: 9999px;
+}
