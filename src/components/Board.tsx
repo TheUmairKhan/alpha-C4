@@ -12,8 +12,6 @@ const PADDING_X = 0.3
 const PADDING_Y = 0.12
 const DISC_Z = -0.06
 const GRAVITY = 22
-const WIN_HOLD = 2.8
-const CLEAR_TIME = 1.6
 const CHEVRON_SPEED = 0.4
 const SCANLINE_GAP = 0.025
 
@@ -122,13 +120,12 @@ const rowY = (row: number) => (row - (ROWS - 1) / 2) * CELL
 
 type Anim = {
   discs: Disc[]
-  phase: 'play' | 'won' | 'clear'
-  timer: number
+  phase: 'play' | 'won'
   pending: number[] | null
   winners: Set<number>
 }
 
-const newAnim = (): Anim => ({ discs: [], phase: 'play', timer: 0, pending: null, winners: new Set() })
+const newAnim = (): Anim => ({ discs: [], phase: 'play', pending: null, winners: new Set() })
 
 const canPlace = (board: BoardState, anim: Anim, col: number) =>
   anim.phase === 'play' && board.heights[col] < ROWS && anim.discs.every((d) => d.settled)
@@ -151,30 +148,19 @@ function dropDisc(board: BoardState, anim: Anim, col: number) {
     vy: 0,
     settled: false,
   })
-  anim.timer = 0
 }
 
-// Returns true once the clear animation has finished and a new game should start
-function stepAnim(anim: Anim, dt: number): boolean {
-  anim.timer += dt
-  if (anim.phase === 'won' && anim.timer >= WIN_HOLD) {
-    anim.phase = 'clear'
-    anim.timer = 0
-    for (const disc of anim.discs) disc.settled = false
-  } else if (anim.phase === 'clear' && anim.timer >= CLEAR_TIME) {
-    return true
-  }
-
+function stepAnim(anim: Anim, dt: number) {
   for (const disc of anim.discs) {
     if (disc.settled) continue
     if (REDUCED_MOTION) {
-      // No gravity or bounce: the disc sits in its cell immediately (and stays put while clearing)
+      // No gravity or bounce: the disc sits in its cell immediately
       disc.y = rowY(disc.row)
     } else {
       disc.vy -= GRAVITY * dt
       disc.y += disc.vy * dt
       const floor = rowY(disc.row)
-      if (anim.phase === 'clear' || disc.y > floor) continue
+      if (disc.y > floor) continue
       disc.y = floor
       if (Math.abs(disc.vy) > 1.5) {
         disc.vy *= -0.28
@@ -185,12 +171,10 @@ function stepAnim(anim: Anim, dt: number): boolean {
     disc.settled = true
     if (anim.pending) {
       anim.phase = 'won'
-      anim.timer = 0
       anim.winners = new Set(anim.pending)
       anim.pending = null
     }
   }
-  return false
 }
 
 type BoardProps = {
@@ -206,7 +190,6 @@ type BoardProps = {
   onMove: (col: number, confidence: number | null) => void
   // True while the model is working out its move
   onThinking: (thinking: boolean) => void
-  onReset: () => void
 }
 
 // Static discs for the position after the first `count` moves
@@ -218,7 +201,7 @@ function replayDiscs(moves: number[], count: number): Disc[] {
   })
 }
 
-export default function Board({ playerSide, viewIndex, hints, onHint, onMove, onThinking, onReset }: BoardProps) {
+export default function Board({ playerSide, viewIndex, hints, onHint, onMove, onThinking }: BoardProps) {
   const discsRef = useRef<THREE.InstancedMesh>(null)
   const highlightRef = useRef<THREE.Group>(null)
   const fillMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
@@ -302,15 +285,8 @@ export default function Board({ playerSide, viewIndex, hints, onHint, onMove, on
 
   useFrame(({ clock }, delta) => {
     const dt = Math.min(delta, 0.05)
-    // The game is frozen while reviewing history, so it can't auto-clear underneath the viewer
-    if (viewIndex === null && stepAnim(animRef.current, dt)) {
-      boardRef.current = newGame()
-      animRef.current = newAnim()
-      movesRef.current = []
-      thinkingRef.current = false
-      onReset()
-      return
-    }
+    // The game is frozen while reviewing history
+    if (viewIndex === null) stepAnim(animRef.current, dt)
     const board = boardRef.current
     const anim = animRef.current
 

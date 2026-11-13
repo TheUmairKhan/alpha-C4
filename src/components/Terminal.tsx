@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { GameResult, newGame, playMove } from '../game/connect4'
 import type { LoggedMove } from '../types'
 import ForwardButton from './ForwardButton'
 import ResetButton from './ResetButton'
@@ -26,12 +27,27 @@ const SIDES = [
     { side: 1, label: 'GO SECOND', chip: 'yellow' },
 ] as const
 
+type Outcome = 'win' | 'lose' | 'draw'
+
+const MESSAGES: Record<Outcome, string> = { win: 'YOU WIN', lose: 'YOU LOSE', draw: 'DRAW' }
+
+// null while the game is undecided; a win leaves the turn with the winner
+function outcomeOf(log: LoggedMove[], playerSide: number | null): Outcome | null {
+    const board = newGame()
+    for (const { col } of log) playMove(board, col)
+    if (board.status === GameResult.Draw) return 'draw'
+    if (board.status !== GameResult.Win || playerSide === null) return null
+    return board.turn === playerSide ? 'win' : 'lose'
+}
+
 export default function Terminal({ height, log, playerSide, viewIndex, onPick, onRewind, onForward, onReset }: TerminalProps) {
     const endRef = useRef<HTMLDivElement>(null)
     const shown = viewIndex ?? log.length
     useEffect(() => {
         endRef.current!.scrollIntoView({ block: 'end' })
     }, [log])
+
+    const outcome = viewIndex === null ? outcomeOf(log, playerSide) : null
 
     const who = (i: number) => (playerSide === null ? `P${(i % 2) + 1}` : i % 2 === playerSide ? 'Player' : 'Model')
 
@@ -54,6 +70,7 @@ export default function Terminal({ height, log, playerSide, viewIndex, onPick, o
                         {confidence !== null && <span className="text-white/60"> ({Math.round(confidence * 100)}%)</span>}
                     </p>
                 ))}
+                {outcome !== null && <p className="mt-3 font-bold">&gt; {MESSAGES[outcome]}</p>}
                 <div ref={endRef} />
             </aside>
             <div className="flex shrink-0 gap-px bg-black p-2 pt-0">

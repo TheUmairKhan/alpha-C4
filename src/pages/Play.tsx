@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import Board, { BOARD_HEIGHT } from '../components/Board'
 import HintLabels from '../components/HintLabels'
 import HintToggle from '../components/HintToggle'
+import Logo from '../components/Logo'
 import PeterButton from '../components/PeterButton'
 import Terminal from '../components/Terminal'
 import ThinkingVideo from '../components/ThinkingVideo'
@@ -71,7 +72,7 @@ export default function Play() {
       <div ref={stageRef} className="relative h-full min-w-0 flex-1">
         <Canvas orthographic dpr={[1, 2]}>
           <FitCamera />
-          <Board key={gameId} playerSide={side} viewIndex={viewIndex} hints={hints} onHint={setHint} onThinking={setThinking} onMove={(col, confidence) => setLog((l) => [...l, { col, confidence }])} onReset={reset} />
+          <Board key={gameId} playerSide={side} viewIndex={viewIndex} hints={hints} onHint={setHint} onThinking={setThinking} onMove={(col, confidence) => setLog((l) => [...l, { col, confidence }])} />
         </Canvas>
         <HintLabels hint={hint} width={stageSize.width} height={stageSize.height} />
       </div>
@@ -80,6 +81,7 @@ export default function Play() {
         <HintToggle on={hints} onToggle={() => setHints((on) => !on)} />
       </div>
       <Terminal height={boardHeight} log={log} playerSide={side} viewIndex={viewIndex} onPick={setSide} onRewind={rewind} onForward={forward} onReset={reset} />
+      <Logo />
       <ThinkingVideo active={thinking && peter} />
     </main>
   )

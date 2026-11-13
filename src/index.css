@@ -1,8 +1,21 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Elms Sans';
+  src: url('/fonts/ElmsSans-SemiBold.ttf');
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: 'Metamorphous';
+  src: url('/fonts/Metamorphous-Regular.ttf');
+}
+
 @theme {
   --font-display: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-elms: 'Elms Sans', sans-serif;
+  --font-metamorphous: 'Metamorphous', serif;
   --color-ink: #05060d;
   --color-panel: #0a0d1c;
   --color-mist: #e6e8f2;
