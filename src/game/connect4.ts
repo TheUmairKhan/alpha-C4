@@ -9,12 +9,13 @@ const DIRECTIONS = [
     [1, -1],
 ]
 
-export enum GameResult {
-    Ongoing = "Ongoing",
-    Win = "Win",
-    Draw = "Draw",
-    Invalid = "Invalid"
-}
+export const GameResult = {
+    Ongoing: "Ongoing",
+    Win: "Win",
+    Draw: "Draw",
+    Invalid: "Invalid",
+} as const
+export type GameResult = (typeof GameResult)[keyof typeof GameResult]
 
 // board: flattened 7x6 board (-1: empty, 0, 1), heights: track pieces in each column [7], turn: which player's turn
 export type BoardState = { cells: number[]; heights: number[]; turn: number; status: GameResult}
@@ -50,7 +51,7 @@ export function newGame(): BoardState {
 }
 
 export function playMove(board: BoardState, col: number): BoardState {
-    const { cells, heights, turn, status } = board
+    const { cells, heights, turn } = board
 
     if (heights[col] >= ROWS) {
         board.status = GameResult.Invalid

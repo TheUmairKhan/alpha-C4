@@ -23,7 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-# Generated wasm bindings (npm run build:ai)
-src/ai/pkg
-
 .env
