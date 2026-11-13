@@ -1,7 +1,6 @@
 import AiWorker from './aiWorker?worker'
+import { AI_CONFIG } from './config'
 import type { AiRequest, AiResponse } from './protocol'
-
-export const AI_SIMULATIONS = 100
 
 // Each client owns a worker (and a copy of the engine), so searches on one never wait behind the other
 function createClient() {
@@ -24,7 +23,7 @@ function createClient() {
     chooseMove: (moves: number[]) =>
       new Promise<AiResponse>((resolve) => {
         waiting.push(resolve)
-        const request: AiRequest = { moves, simulations: AI_SIMULATIONS }
+        const request: AiRequest = { moves, simulations: AI_CONFIG.simulations }
         getWorker().postMessage(request)
       }),
   }
